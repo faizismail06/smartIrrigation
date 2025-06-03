@@ -14,7 +14,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
+  
   // Set orientasi layar agar hanya portrait
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
