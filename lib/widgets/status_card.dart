@@ -6,7 +6,7 @@ class StatusCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback? onTap;
-  
+
   const StatusCard({
     super.key,
     required this.title,
@@ -19,7 +19,7 @@ class StatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Card(
       elevation: 0,
       color: theme.colorScheme.surface,

@@ -13,27 +13,27 @@ class HistoryScreen extends StatefulWidget {
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProviderStateMixin {
+class _HistoryScreenState extends State<HistoryScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final irrigationSystem = Provider.of<IrrigationSystem>(context);
-    final threshold = irrigationSystem.systemConfig.moistureThreshold;
-    
+
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
@@ -66,19 +66,20 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
         controller: _tabController,
         children: [
           // Chart Tab
-          _buildChartTab(context, irrigationSystem, threshold),
-          
+          _buildChartTab(context, irrigationSystem),
+
           // Log Tab
-          _buildLogTab(context, irrigationSystem, threshold),
+          _buildLogTab(context, irrigationSystem),
         ],
       ),
     );
   }
-  
-  Widget _buildChartTab(BuildContext context, IrrigationSystem irrigationSystem, int threshold) {
+
+  Widget _buildChartTab(
+      BuildContext context, IrrigationSystem irrigationSystem) {
     final theme = Theme.of(context);
     final historyData = irrigationSystem.historyData;
-    
+
     if (historyData.isEmpty) {
       return Center(
         child: Text(
@@ -89,7 +90,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
         ),
       );
     }
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -104,9 +105,9 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
               color: theme.colorScheme.onBackground,
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Chart
           Card(
             elevation: 0,
@@ -123,14 +124,14 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
               child: SizedBox(
                 height: 300,
                 child: LineChart(
-                  _mainLineChartData(context, historyData, threshold),
+                  _mainLineChartData(context, historyData),
                 ),
               ),
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Title
           Text(
             'Statistik',
@@ -140,20 +141,20 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
               color: theme.colorScheme.onBackground,
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Statistics
-          _buildStatisticCards(context, historyData, threshold),
+          _buildStatisticCards(context, historyData),
         ],
       ),
     );
   }
-  
-  Widget _buildLogTab(BuildContext context, IrrigationSystem irrigationSystem, int threshold) {
+
+  Widget _buildLogTab(BuildContext context, IrrigationSystem irrigationSystem) {
     final theme = Theme.of(context);
     final historyData = irrigationSystem.historyData;
-    
+
     if (historyData.isEmpty) {
       return Center(
         child: Text(
@@ -164,29 +165,24 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
         ),
       );
     }
-    
+
     // Reverse history data to show newest first
     final reversedData = historyData.reversed.toList();
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(16.0),
       itemCount: reversedData.length,
       itemBuilder: (context, index) {
         final data = reversedData[index];
         final isToday = data.timestamp.day == DateTime.now().day;
-        
+
         String timeText;
         if (isToday) {
           timeText = 'Hari ini, ${DateFormat('HH:mm').format(data.timestamp)}';
         } else {
           timeText = timeago.format(data.timestamp, locale: 'id');
         }
-        
-        final isDry = data.moistureStatus == "DRY";
-        final statusColor = isDry
-            ? const Color(0xFFE57373) // Merah untuk DRY
-            : const Color(0xFF81C784); // Hijau untuk WET
-        
+
         return Card(
           elevation: 0,
           color: theme.colorScheme.surface,
@@ -207,12 +203,12 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.2),
+                color: Color(data.moistureColorValue).withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                isDry ? Icons.water_drop_outlined : Icons.water_drop,
-                color: statusColor,
+                Icons.water_drop,
+                color: Color(data.moistureColorValue),
               ),
             ),
             title: Text(
@@ -226,9 +222,9 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  data.moistureStatus,
+                  data.moistureCategory,
                   style: TextStyle(
-                    color: statusColor,
+                    color: Color(data.moistureColorValue),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -290,25 +286,17 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
       },
     );
   }
-  
-  LineChartData _mainLineChartData(BuildContext context, List<SensorData> historyData, int threshold) {
+
+  LineChartData _mainLineChartData(
+      BuildContext context, List<SensorData> historyData) {
     final theme = Theme.of(context);
-    
+
     return LineChartData(
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
         horizontalInterval: 200,
         getDrawingHorizontalLine: (value) {
-          // Special line for threshold
-          if (value == threshold.toDouble()) {
-            return FlLine(
-              color: theme.colorScheme.primary.withOpacity(0.5),
-              strokeWidth: 1.5,
-              dashArray: [5, 5],
-            );
-          }
-          
           return FlLine(
             color: theme.colorScheme.outline.withOpacity(0.2),
             strokeWidth: 1,
@@ -327,12 +315,14 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 30,
-            interval: historyData.length > 10 ? (historyData.length / 5).floor().toDouble() : 1,
+            interval: historyData.length > 10
+                ? (historyData.length / 5).floor().toDouble()
+                : 1,
             getTitlesWidget: (value, meta) {
               if (value.toInt() >= historyData.length || value.toInt() < 0) {
                 return const SizedBox.shrink();
               }
-              
+
               final timestamp = historyData[value.toInt()].timestamp;
               return SideTitleWidget(
                 axisSide: meta.axisSide,
@@ -353,21 +343,6 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
             reservedSize: 40,
             interval: 200,
             getTitlesWidget: (value, meta) {
-              // Special label for threshold
-              if (value == threshold.toDouble()) {
-                return SideTitleWidget(
-                  axisSide: meta.axisSide,
-                  child: Text(
-                    '⭐ $threshold',
-                    style: TextStyle(
-                      color: theme.colorScheme.primary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                );
-              }
-              
               return SideTitleWidget(
                 axisSide: meta.axisSide,
                 child: Text(
@@ -403,7 +378,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
                 ),
                 children: [
                   TextSpan(
-                    text: '\n${data.moistureStatus}',
+                    text: '\n${data.moistureCategory}',
                     style: TextStyle(
                       color: theme.colorScheme.onInverseSurface,
                       fontWeight: FontWeight.normal,
@@ -411,9 +386,11 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
                     ),
                   ),
                   TextSpan(
-                    text: '\n${DateFormat('dd/MM HH:mm').format(data.timestamp)}',
+                    text:
+                        '\n${DateFormat('dd/MM HH:mm').format(data.timestamp)}',
                     style: TextStyle(
-                      color: theme.colorScheme.onInverseSurface.withOpacity(0.7),
+                      color:
+                          theme.colorScheme.onInverseSurface.withOpacity(0.7),
                       fontWeight: FontWeight.normal,
                       fontSize: 10,
                     ),
@@ -428,7 +405,8 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
         LineChartBarData(
           spots: List.generate(
             historyData.length,
-            (index) => FlSpot(index.toDouble(), historyData[index].moisture.toDouble()),
+            (index) => FlSpot(
+                index.toDouble(), historyData[index].moisture.toDouble()),
           ),
           isCurved: true,
           gradient: LinearGradient(
@@ -439,10 +417,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
           ),
           barWidth: 3,
           isStrokeCapRound: true,
-          dotData: const FlDotData(
-            show: false,
-            getDotPainter: _getStatusDotPainter,
-          ),
+          dotData: const FlDotData(show: false),
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
@@ -456,61 +431,29 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
           ),
         ),
       ],
-      extraLinesData: ExtraLinesData(
-        horizontalLines: [
-          HorizontalLine(
-            y: threshold.toDouble(),
-            color: theme.colorScheme.primary.withOpacity(0.7),
-            strokeWidth: 1.5,
-            dashArray: [5, 5],
-            label: HorizontalLineLabel(
-              show: true,
-              alignment: Alignment.topRight,
-              padding: const EdgeInsets.only(left: 8),
-              style: TextStyle(
-                color: theme.colorScheme.primary,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-              labelResolver: (line) => 'Threshold',
-            ),
-          ),
-        ],
-      ),
     );
   }
-  
-  static FlDotPainter _getStatusDotPainter(spot, percent, barData, index) {
-    return FlDotCirclePainter(
-      radius: 4,
-      color: spot.y >= 500 ? const Color(0xFF81C784) : const Color(0xFFE57373),
-      strokeWidth: 1,
-      strokeColor: Colors.white,
-    );
-  }
-  
-  Widget _buildStatisticCards(BuildContext context, List<SensorData> historyData, int threshold) {
+
+  Widget _buildStatisticCards(
+      BuildContext context, List<SensorData> historyData) {
     final theme = Theme.of(context);
-    
+
     // Calculate statistics
     int minMoisture = 1000;
     int maxMoisture = 0;
     int sumMoisture = 0;
     int pumpActiveCount = 0;
-    int dryCount = 0;
-    int wetCount = 0;
-    
+
     for (final data in historyData) {
       if (data.moisture < minMoisture) minMoisture = data.moisture;
       if (data.moisture > maxMoisture) maxMoisture = data.moisture;
       sumMoisture += data.moisture;
       if (data.pumpStatus) pumpActiveCount++;
-      if (data.moistureStatus == "DRY") dryCount++;
-      if (data.moistureStatus == "WET") wetCount++;
     }
-    
-    final avgMoisture = historyData.isNotEmpty ? sumMoisture ~/ historyData.length : 0;
-    
+
+    final avgMoisture =
+        historyData.isNotEmpty ? sumMoisture ~/ historyData.length : 0;
+
     return GridView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -549,24 +492,10 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
           icon: Icons.flash_on,
           color: const Color(0xFFFFA726),
         ),
-        _buildStatCard(
-          context,
-          title: 'Status DRY',
-          value: '$dryCount kali',
-          icon: Icons.water_drop_outlined,
-          color: const Color(0xFFE57373),
-        ),
-        _buildStatCard(
-          context,
-          title: 'Status WET',
-          value: '$wetCount kali',
-          icon: Icons.water_drop,
-          color: const Color(0xFF81C784),
-        ),
       ],
     );
   }
-  
+
   Widget _buildStatCard(
     BuildContext context, {
     required String title,
@@ -575,7 +504,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
     required Color color,
   }) {
     final theme = Theme.of(context);
-    
+
     return Card(
       elevation: 0,
       color: theme.colorScheme.surface,

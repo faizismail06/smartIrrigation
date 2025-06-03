@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:smart_irrigation/models/system_config.dart';
+import 'package:smart_irrigation/models/fuzzy_config.dart';
 import 'package:smart_irrigation/models/sensor_data.dart';
 
 class FirebaseService {
@@ -19,27 +19,22 @@ class FirebaseService {
     });
   }
 
-  // Mendapatkan konfigurasi sistem
-  Future<SystemConfig> getSystemConfig() async {
+  // Mendapatkan konfigurasi fuzzy
+  Future<FuzzyConfig> getFuzzyConfig() async {
     final snapshot =
-        await _database.child('irrigation-system/system_config').get();
+        await _database.child('irrigation-system/fuzzy_config').get();
     if (snapshot.exists) {
       final data = snapshot.value as Map<dynamic, dynamic>;
-      return SystemConfig.fromMap(Map<String, dynamic>.from(data));
+      return FuzzyConfig.fromMap(Map<String, dynamic>.from(data));
     } else {
-      // Jika konfigurasi belum ada di Firebase, buat dengan default
-      final defaultConfig = SystemConfig.defaultConfig();
-      await _database
-          .child('irrigation-system/system_config')
-          .set(defaultConfig.toMap());
-      return defaultConfig;
+      return FuzzyConfig.defaultConfig();
     }
   }
 
-  // Update konfigurasi sistem
-  Future<void> updateSystemConfig(SystemConfig config) async {
+  // Update konfigurasi fuzzy
+  Future<void> updateFuzzyConfig(FuzzyConfig config) async {
     await _database
-        .child('irrigation-system/system_config')
+        .child('irrigation-system/fuzzy_config')
         .update(config.toMap());
   }
 
@@ -96,8 +91,6 @@ class FirebaseService {
     if (snapshot.exists) {
       return snapshot.value as bool;
     } else {
-      // Jika belum ada, buat dengan default
-      await _database.child('irrigation-system/system_status').set(true);
       return true; // Default status adalah aktif
     }
   }
@@ -107,12 +100,31 @@ class FirebaseService {
     await _database.child('irrigation-system/system_status').set(isActive);
   }
 
+  void startCountdown(int duration) async {
+    for (int i = duration; i >= 0; i--) {
+      await Future.delayed(const Duration(seconds: 1));
+      await _database
+          .child('irrigation-system/sensor_data/pump_remaining_time')
+          .set(i);
+    }
+
+    // Setelah countdown selesai, matikan pompa
+    await _database
+        .child('irrigation-system/sensor_data/pump_status')
+        .set(false);
+  }
+
   // Memaksa pompa menyala secara manual
   Future<void> triggerPumpManually(int durationSeconds) async {
-    await _database.child('irrigation-system/manual_control').update({
-      'trigger_pump': true,
-      'duration': durationSeconds,
-      'timestamp': ServerValue.timestamp,
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await _database.child('irrigation-system/sensor_data').update({
+      'pump_status': true,
+      'pump_duration': durationSeconds,
+      'pump_remaining_time': durationSeconds,
+      'timestamp': now,
     });
+
+    // Mulai countdown di sisi client
+    startCountdown(durationSeconds);
   }
 }

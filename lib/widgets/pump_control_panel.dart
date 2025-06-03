@@ -21,7 +21,6 @@ class PumpControlPanel extends StatefulWidget {
 
 class _PumpControlPanelState extends State<PumpControlPanel> {
   int _selectedDuration = 5;
-  bool _isManualActivating = false; // Tambahan untuk loading state
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +45,7 @@ class _PumpControlPanelState extends State<PumpControlPanel> {
               height: 100,
               child: widget.pumpStatus
                   ? Lottie.network(
-                      'https://assets9.lottiefiles.com/packages/lf20_qezw5rsj.json',
+                      'https://lottie.host/eba0ee1d-05c3-4dab-b1cc-f6833c95e52a/1U7Yi9eyrc.json',
                       animate: true,
                       repeat: true,
                     )
@@ -104,9 +103,7 @@ class _PumpControlPanelState extends State<PumpControlPanel> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
-                  value: widget.pumpRemainingTime > 0
-                      ? widget.pumpRemainingTime / widget.pumpDuration
-                      : 0,
+                  value: widget.pumpRemainingTime / widget.pumpDuration,
                   backgroundColor: theme.colorScheme.surfaceVariant,
                   color: theme.colorScheme.primary,
                   minHeight: 8,
@@ -141,34 +138,15 @@ class _PumpControlPanelState extends State<PumpControlPanel> {
 
             const SizedBox(height: 16),
 
-            // Activate Pump Button - PERBAIKAN UTAMA
+            // Activate Pump Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                icon: _isManualActivating
-                    ? SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            theme.colorScheme.onPrimary,
-                          ),
-                        ),
-                      )
-                    : const Icon(Icons.power_settings_new),
-                label: Text(_isManualActivating
-                    ? 'Mengaktifkan...'
-                    : widget.pumpStatus
-                        ? 'Pompa Sedang Aktif'
-                        : 'Nyalakan Pompa'),
+                icon: const Icon(Icons.power_settings_new),
+                label: const Text('Nyalakan Pompa'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: widget.pumpStatus
-                      ? theme.colorScheme.secondary
-                      : theme.colorScheme.primary,
-                  foregroundColor: widget.pumpStatus
-                      ? theme.colorScheme.onSecondary
-                      : theme.colorScheme.onPrimary,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -178,42 +156,11 @@ class _PumpControlPanelState extends State<PumpControlPanel> {
                   disabledForegroundColor:
                       theme.colorScheme.onSurface.withOpacity(0.38),
                 ),
-                // PERBAIKAN: Hanya disable jika sedang loading manual activation
-                onPressed: _isManualActivating
+                onPressed: widget.pumpStatus
                     ? null
                     : () => _activatePumpManually(context),
               ),
             ),
-
-            // Info tambahan jika pompa sedang aktif
-            if (widget.pumpStatus) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.info,
-                      size: 16,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Pompa akan otomatis mati dalam ${widget.pumpRemainingTime}s',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -228,7 +175,7 @@ class _PumpControlPanelState extends State<PumpControlPanel> {
       label: Text('${duration}s'),
       selected: isSelected,
       onSelected: (selected) {
-        if (selected && !_isManualActivating) {
+        if (selected) {
           setState(() {
             _selectedDuration = duration;
           });
@@ -248,43 +195,6 @@ class _PumpControlPanelState extends State<PumpControlPanel> {
   void _activatePumpManually(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Tampilkan pesan khusus jika pompa sedang aktif
-    if (widget.pumpStatus) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: theme.colorScheme.surface,
-          title: Text(
-            'Pompa Sedang Aktif',
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          content: Text(
-            'Pompa sedang aktif dan akan mati otomatis dalam ${widget.pumpRemainingTime} detik. Anda dapat menunggu atau mematikan pompa secara manual.',
-            style: TextStyle(
-              color: theme.colorScheme.onSurface.withOpacity(0.8),
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: Text(
-                'Tutup',
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    // Dialog konfirmasi untuk aktivasi manual
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -320,77 +230,30 @@ class _PumpControlPanelState extends State<PumpControlPanel> {
             ),
             child: const Text('Nyalakan'),
             onPressed: () {
+              widget.onManualPump(_selectedDuration);
               Navigator.of(context).pop();
-              _executeManualPump();
+
+              // Show success message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Pompa dinyalakan selama $_selectedDuration detik',
+                    style: TextStyle(
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                  backgroundColor: theme.colorScheme.primary,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
             },
           ),
         ],
       ),
     );
-  }
-
-  // PERBAIKAN: Method terpisah untuk eksekusi manual pump
-  void _executeManualPump() async {
-    final theme = Theme.of(context);
-
-    setState(() {
-      _isManualActivating = true;
-    });
-
-    try {
-      // Panggil callback untuk aktivasi pompa
-      final result = widget.onManualPump(_selectedDuration);
-
-      // Cek apakah callback mengembalikan Future atau tidak
-      if (result is Future) {
-        await result;
-      }
-
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Pompa berhasil dinyalakan selama $_selectedDuration detik',
-              style: TextStyle(
-                color: theme.colorScheme.onPrimary,
-              ),
-            ),
-            backgroundColor: theme.colorScheme.primary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (error) {
-      // Show error message jika gagal
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Gagal menyalakan pompa: $error',
-              style: TextStyle(
-                color: theme.colorScheme.onError,
-              ),
-            ),
-            backgroundColor: theme.colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isManualActivating = false;
-        });
-      }
-    }
   }
 }

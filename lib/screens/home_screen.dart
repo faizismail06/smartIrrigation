@@ -5,9 +5,9 @@ import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'package:smart_irrigation/models/irrigation_system.dart';
 import 'package:smart_irrigation/screens/history_screen.dart';
 import 'package:smart_irrigation/screens/settings_screen.dart';
+import 'package:smart_irrigation/widgets/fuzzy_chart.dart';
 import 'package:smart_irrigation/widgets/pump_control_panel.dart';
 import 'package:smart_irrigation/widgets/status_card.dart';
-import 'package:smart_irrigation/widgets/moisture_status_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -107,18 +107,46 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 8),
               _buildMoistureGauge(context, currentData.moisture),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
-              // Moisture Status Card - Pengganti Fuzzy Chart
-              // Moisture Status Card - Pengganti Fuzzy Chart
-              MoistureStatusCard(
-                moistureStatus: currentData.moistureStatus,
-                moistureValue: currentData.moisture,
+              // Moisture Category
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Color(currentData.moistureColorValue),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    currentData.moistureCategory,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
 
               const SizedBox(height: 24),
 
-// Pump Control Panel
+              // Fuzzy Logic Chart
+              Text(
+                'Fuzzy Membership',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onBackground,
+                ),
+              ),
+              const SizedBox(height: 16),
+              FuzzyChart(fuzzyData: currentData.fuzzyData),
+
+              const SizedBox(height: 24),
+
+              // Pump Control Panel
               Text(
                 'Kontrol Pompa',
                 style: TextStyle(
@@ -132,21 +160,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 pumpStatus: currentData.pumpStatus,
                 pumpDuration: currentData.pumpDuration,
                 pumpRemainingTime: currentData.pumpRemainingTime,
-                // PERBAIKAN: Buat callback yang mengembalikan Future
-                onManualPump: (duration) async {
-                  try {
-                    // Pastikan method ini mengembalikan Future
-                    await irrigationSystem.triggerPumpManually(duration);
-                  } catch (e) {
-                    // Re-throw error agar bisa ditangkap oleh PumpControlPanel
-                    throw 'Gagal mengaktifkan pompa: $e';
-                  }
-                },
+                onManualPump: (duration) =>
+                    irrigationSystem.triggerPumpManually(duration),
               ),
 
               const SizedBox(height: 24),
 
-// View History Button
+              // View History Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -179,8 +199,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildMoistureGauge(BuildContext context, int moistureValue) {
     final theme = Theme.of(context);
-    final threshold =
-        Provider.of<IrrigationSystem>(context).systemConfig.moistureThreshold;
 
     return SizedBox(
       height: 200,
@@ -222,15 +240,36 @@ class _HomeScreenState extends State<HomeScreen> {
             ranges: <GaugeRange>[
               GaugeRange(
                 startValue: 0,
-                endValue: threshold.toDouble(),
-                color: const Color(0xFFE57373), // Merah untuk DRY
+                endValue: 200,
+                color: const Color(0xFFE57373),
                 startWidth: 10,
                 endWidth: 10,
               ),
               GaugeRange(
-                startValue: threshold.toDouble(),
+                startValue: 200,
+                endValue: 450,
+                color: const Color(0xFFFFB74D),
+                startWidth: 10,
+                endWidth: 10,
+              ),
+              GaugeRange(
+                startValue: 450,
+                endValue: 700,
+                color: const Color(0xFF81C784),
+                startWidth: 10,
+                endWidth: 10,
+              ),
+              GaugeRange(
+                startValue: 700,
+                endValue: 900,
+                color: const Color(0xFF4FC3F7),
+                startWidth: 10,
+                endWidth: 10,
+              ),
+              GaugeRange(
+                startValue: 900,
                 endValue: 1000,
-                color: const Color(0xFF81C784), // Hijau untuk WET
+                color: const Color(0xFF5C6BC0),
                 startWidth: 10,
                 endWidth: 10,
               ),

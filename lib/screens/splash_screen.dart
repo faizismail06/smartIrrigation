@@ -64,8 +64,13 @@ class _SplashScreenState extends State<SplashScreen>
               width: 200,
               margin: const EdgeInsets.only(bottom: 30),
               child: Lottie.network(
-                'https://assets5.lottiefiles.com/packages/lf20_lujpxicq.json',
+                'https://lottie.host/50f73630-2b59-4bd0-95c4-894d2dbdaf90/nsUwCQIUaV.json',
                 controller: _animationController,
+                onLoaded: (composition) {
+                  _animationController
+                    ..duration = composition.duration
+                    ..forward();
+                },
                 fit: BoxFit.contain,
               ),
             ),
@@ -85,7 +90,7 @@ class _SplashScreenState extends State<SplashScreen>
 
             // Subtitle
             Text(
-              'Sistem Irigasi Otomatis DRY/WET',
+              'Sistem Irigasi Otomatis dengan Fuzzy Logic',
               style: TextStyle(
                 color: colorScheme.onBackground.withOpacity(0.7),
                 fontSize: 14,
