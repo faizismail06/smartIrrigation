@@ -2,13 +2,13 @@ class SystemConfig {
   final int moistureThreshold;
   final int pumpDurationLong;
   final int pumpDurationNone;
-  
+
   SystemConfig({
     required this.moistureThreshold,
     required this.pumpDurationLong,
     required this.pumpDurationNone,
   });
-  
+
   // Konfigurasi default
   factory SystemConfig.defaultConfig() {
     return SystemConfig(
@@ -17,7 +17,7 @@ class SystemConfig {
       pumpDurationNone: 0,
     );
   }
-  
+
   // Konversi dari Map (Firebase)
   factory SystemConfig.fromMap(Map<String, dynamic> map) {
     return SystemConfig(
@@ -26,7 +26,7 @@ class SystemConfig {
       pumpDurationNone: map['pump_duration_none'] ?? 0,
     );
   }
-  
+
   // Konversi ke Map (untuk Firebase)
   Map<String, dynamic> toMap() {
     return {
@@ -35,7 +35,7 @@ class SystemConfig {
       'pump_duration_none': pumpDurationNone,
     };
   }
-  
+
   // Copy with untuk update nilai
   SystemConfig copyWith({
     int? moistureThreshold,

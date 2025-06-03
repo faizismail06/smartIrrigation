@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:smart_irrigation/models/fuzzy_config.dart';
+import 'package:smart_irrigation/models/system_config.dart';
 import 'package:smart_irrigation/models/sensor_data.dart';
 import 'package:smart_irrigation/services/firebase_service.dart';
 
@@ -8,7 +8,7 @@ class IrrigationSystem with ChangeNotifier {
   final FirebaseService _firebaseService;
 
   SensorData _currentData = SensorData.empty();
-  FuzzyConfig _fuzzyConfig = FuzzyConfig.defaultConfig();
+  SystemConfig _systemConfig = SystemConfig.defaultConfig();
   List<SensorData> _historyData = [];
   bool _isSystemActive = true;
   bool _isLoading = true;
@@ -20,7 +20,7 @@ class IrrigationSystem with ChangeNotifier {
 
   // Getters
   SensorData get currentData => _currentData;
-  FuzzyConfig get fuzzyConfig => _fuzzyConfig;
+  SystemConfig get systemConfig => _systemConfig;
   List<SensorData> get historyData => _historyData;
   bool get isSystemActive => _isSystemActive;
   bool get isLoading => _isLoading;
@@ -31,8 +31,8 @@ class IrrigationSystem with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Ambil konfigurasi fuzzy
-      _fuzzyConfig = await _firebaseService.getFuzzyConfig();
+      // Ambil konfigurasi sistem
+      _systemConfig = await _firebaseService.getSystemConfig();
 
       // Ambil status sistem
       _isSystemActive = await _firebaseService.getSystemStatus();
@@ -60,15 +60,15 @@ class IrrigationSystem with ChangeNotifier {
     }
   }
 
-  // Update konfigurasi fuzzy
-  Future<void> updateFuzzyConfig(FuzzyConfig newConfig) async {
+  // Update konfigurasi sistem
+  Future<void> updateSystemConfig(SystemConfig newConfig) async {
     try {
-      await _firebaseService.updateFuzzyConfig(newConfig);
-      _fuzzyConfig = newConfig;
+      await _firebaseService.updateSystemConfig(newConfig);
+      _systemConfig = newConfig;
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('Error updating fuzzy config: $e');
+        print('Error updating system config: $e');
       }
       rethrow;
     }

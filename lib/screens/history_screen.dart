@@ -33,6 +33,7 @@ class _HistoryScreenState extends State<HistoryScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final irrigationSystem = Provider.of<IrrigationSystem>(context);
+    final threshold = irrigationSystem.systemConfig.moistureThreshold;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
@@ -66,17 +67,17 @@ class _HistoryScreenState extends State<HistoryScreen>
         controller: _tabController,
         children: [
           // Chart Tab
-          _buildChartTab(context, irrigationSystem),
+          _buildChartTab(context, irrigationSystem, threshold),
 
           // Log Tab
-          _buildLogTab(context, irrigationSystem),
+          _buildLogTab(context, irrigationSystem, threshold),
         ],
       ),
     );
   }
 
   Widget _buildChartTab(
-      BuildContext context, IrrigationSystem irrigationSystem) {
+      BuildContext context, IrrigationSystem irrigationSystem, int threshold) {
     final theme = Theme.of(context);
     final historyData = irrigationSystem.historyData;
 
@@ -124,7 +125,7 @@ class _HistoryScreenState extends State<HistoryScreen>
               child: SizedBox(
                 height: 300,
                 child: LineChart(
-                  _mainLineChartData(context, historyData),
+                  _mainLineChartData(context, historyData, threshold),
                 ),
               ),
             ),
@@ -145,13 +146,14 @@ class _HistoryScreenState extends State<HistoryScreen>
           const SizedBox(height: 8),
 
           // Statistics
-          _buildStatisticCards(context, historyData),
+          _buildStatisticCards(context, historyData, threshold),
         ],
       ),
     );
   }
 
-  Widget _buildLogTab(BuildContext context, IrrigationSystem irrigationSystem) {
+  Widget _buildLogTab(
+      BuildContext context, IrrigationSystem irrigationSystem, int threshold) {
     final theme = Theme.of(context);
     final historyData = irrigationSystem.historyData;
 
@@ -183,6 +185,11 @@ class _HistoryScreenState extends State<HistoryScreen>
           timeText = timeago.format(data.timestamp, locale: 'id');
         }
 
+        final isDry = data.moistureStatus == "DRY";
+        final statusColor = isDry
+            ? const Color(0xFFE57373) // Merah untuk DRY
+            : const Color(0xFF81C784); // Hijau untuk WET
+
         return Card(
           elevation: 0,
           color: theme.colorScheme.surface,
@@ -203,12 +210,12 @@ class _HistoryScreenState extends State<HistoryScreen>
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: Color(data.moistureColorValue).withOpacity(0.2),
+                color: statusColor.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                Icons.water_drop,
-                color: Color(data.moistureColorValue),
+                isDry ? Icons.water_drop_outlined : Icons.water_drop,
+                color: statusColor,
               ),
             ),
             title: Text(
@@ -222,9 +229,9 @@ class _HistoryScreenState extends State<HistoryScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  data.moistureCategory,
+                  data.moistureStatus,
                   style: TextStyle(
-                    color: Color(data.moistureColorValue),
+                    color: statusColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -288,7 +295,7 @@ class _HistoryScreenState extends State<HistoryScreen>
   }
 
   LineChartData _mainLineChartData(
-      BuildContext context, List<SensorData> historyData) {
+      BuildContext context, List<SensorData> historyData, int threshold) {
     final theme = Theme.of(context);
 
     return LineChartData(
@@ -297,6 +304,15 @@ class _HistoryScreenState extends State<HistoryScreen>
         drawVerticalLine: false,
         horizontalInterval: 200,
         getDrawingHorizontalLine: (value) {
+          // Special line for threshold
+          if (value == threshold.toDouble()) {
+            return FlLine(
+              color: theme.colorScheme.primary.withOpacity(0.5),
+              strokeWidth: 1.5,
+              dashArray: [5, 5],
+            );
+          }
+
           return FlLine(
             color: theme.colorScheme.outline.withOpacity(0.2),
             strokeWidth: 1,
@@ -343,6 +359,21 @@ class _HistoryScreenState extends State<HistoryScreen>
             reservedSize: 40,
             interval: 200,
             getTitlesWidget: (value, meta) {
+              // Special label for threshold
+              if (value == threshold.toDouble()) {
+                return SideTitleWidget(
+                  axisSide: meta.axisSide,
+                  child: Text(
+                    '⭐ $threshold',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                );
+              }
+
               return SideTitleWidget(
                 axisSide: meta.axisSide,
                 child: Text(
@@ -378,7 +409,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                 ),
                 children: [
                   TextSpan(
-                    text: '\n${data.moistureCategory}',
+                    text: '\n${data.moistureStatus}',
                     style: TextStyle(
                       color: theme.colorScheme.onInverseSurface,
                       fontWeight: FontWeight.normal,
@@ -417,7 +448,10 @@ class _HistoryScreenState extends State<HistoryScreen>
           ),
           barWidth: 3,
           isStrokeCapRound: true,
-          dotData: const FlDotData(show: false),
+          dotData: const FlDotData(
+            show: false,
+            getDotPainter: _getStatusDotPainter,
+          ),
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
@@ -431,11 +465,41 @@ class _HistoryScreenState extends State<HistoryScreen>
           ),
         ),
       ],
+      extraLinesData: ExtraLinesData(
+        horizontalLines: [
+          HorizontalLine(
+            y: threshold.toDouble(),
+            color: theme.colorScheme.primary.withOpacity(0.7),
+            strokeWidth: 1.5,
+            dashArray: [5, 5],
+            label: HorizontalLineLabel(
+              show: true,
+              alignment: Alignment.topRight,
+              padding: const EdgeInsets.only(left: 8),
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+              labelResolver: (line) => 'Threshold',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static FlDotPainter _getStatusDotPainter(spot, percent, barData, index) {
+    return FlDotCirclePainter(
+      radius: 4,
+      color: spot.y >= 500 ? const Color(0xFF81C784) : const Color(0xFFE57373),
+      strokeWidth: 1,
+      strokeColor: Colors.white,
     );
   }
 
   Widget _buildStatisticCards(
-      BuildContext context, List<SensorData> historyData) {
+      BuildContext context, List<SensorData> historyData, int threshold) {
     final theme = Theme.of(context);
 
     // Calculate statistics
@@ -443,12 +507,16 @@ class _HistoryScreenState extends State<HistoryScreen>
     int maxMoisture = 0;
     int sumMoisture = 0;
     int pumpActiveCount = 0;
+    int dryCount = 0;
+    int wetCount = 0;
 
     for (final data in historyData) {
       if (data.moisture < minMoisture) minMoisture = data.moisture;
       if (data.moisture > maxMoisture) maxMoisture = data.moisture;
       sumMoisture += data.moisture;
       if (data.pumpStatus) pumpActiveCount++;
+      if (data.moistureStatus == "DRY") dryCount++;
+      if (data.moistureStatus == "WET") wetCount++;
     }
 
     final avgMoisture =
@@ -491,6 +559,20 @@ class _HistoryScreenState extends State<HistoryScreen>
           value: '$pumpActiveCount kali',
           icon: Icons.flash_on,
           color: const Color(0xFFFFA726),
+        ),
+        _buildStatCard(
+          context,
+          title: 'Status DRY',
+          value: '$dryCount kali',
+          icon: Icons.water_drop_outlined,
+          color: const Color(0xFFE57373),
+        ),
+        _buildStatCard(
+          context,
+          title: 'Status WET',
+          value: '$wetCount kali',
+          icon: Icons.water_drop,
+          color: const Color(0xFF81C784),
         ),
       ],
     );

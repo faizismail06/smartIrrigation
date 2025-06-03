@@ -90,7 +90,7 @@ class _SplashScreenState extends State<SplashScreen>
 
             // Subtitle
             Text(
-              'Sistem Irigasi Otomatis dengan Fuzzy Logic',
+              'Sistem Irigasi Otomatis DRY/WET',
               style: TextStyle(
                 color: colorScheme.onBackground.withOpacity(0.7),
                 fontSize: 14,

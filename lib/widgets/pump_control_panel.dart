@@ -103,7 +103,9 @@ class _PumpControlPanelState extends State<PumpControlPanel> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
-                  value: widget.pumpRemainingTime / widget.pumpDuration,
+                  value: widget.pumpDuration > 0
+                      ? widget.pumpRemainingTime / widget.pumpDuration
+                      : 0,
                   backgroundColor: theme.colorScheme.surfaceVariant,
                   color: theme.colorScheme.primary,
                   minHeight: 8,

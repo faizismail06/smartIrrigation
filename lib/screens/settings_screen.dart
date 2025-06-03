@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:smart_irrigation/models/fuzzy_config.dart';
+import 'package:smart_irrigation/models/system_config.dart';
 import 'package:smart_irrigation/models/irrigation_system.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -11,29 +11,14 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  late FuzzyConfig _fuzzyConfig;
+  late SystemConfig _systemConfig;
   bool _isLoading = false;
   bool _isEditing = false;
 
   // Controllers for text fields
-  final TextEditingController _veryDryMinController = TextEditingController();
-  final TextEditingController _veryDryMaxController = TextEditingController();
-  final TextEditingController _dryMinController = TextEditingController();
-  final TextEditingController _dryMaxController = TextEditingController();
-  final TextEditingController _moistMinController = TextEditingController();
-  final TextEditingController _moistMaxController = TextEditingController();
-  final TextEditingController _wetMinController = TextEditingController();
-  final TextEditingController _wetMaxController = TextEditingController();
-  final TextEditingController _veryWetMinController = TextEditingController();
-  final TextEditingController _veryWetMaxController = TextEditingController();
-
-  final TextEditingController _pumpDurationVeryLongController =
+  final TextEditingController _moistureThresholdController =
       TextEditingController();
   final TextEditingController _pumpDurationLongController =
-      TextEditingController();
-  final TextEditingController _pumpDurationMediumController =
-      TextEditingController();
-  final TextEditingController _pumpDurationShortController =
       TextEditingController();
 
   @override
@@ -43,51 +28,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final irrigationSystem =
           Provider.of<IrrigationSystem>(context, listen: false);
-      _fuzzyConfig = irrigationSystem.fuzzyConfig;
+      _systemConfig = irrigationSystem.systemConfig;
       _updateTextControllers();
     });
   }
 
   @override
   void dispose() {
-    _veryDryMinController.dispose();
-    _veryDryMaxController.dispose();
-    _dryMinController.dispose();
-    _dryMaxController.dispose();
-    _moistMinController.dispose();
-    _moistMaxController.dispose();
-    _wetMinController.dispose();
-    _wetMaxController.dispose();
-    _veryWetMinController.dispose();
-    _veryWetMaxController.dispose();
-
-    _pumpDurationVeryLongController.dispose();
+    _moistureThresholdController.dispose();
     _pumpDurationLongController.dispose();
-    _pumpDurationMediumController.dispose();
-    _pumpDurationShortController.dispose();
 
     super.dispose();
   }
 
   void _updateTextControllers() {
-    _veryDryMinController.text = _fuzzyConfig.veryDryMin.toString();
-    _veryDryMaxController.text = _fuzzyConfig.veryDryMax.toString();
-    _dryMinController.text = _fuzzyConfig.dryMin.toString();
-    _dryMaxController.text = _fuzzyConfig.dryMax.toString();
-    _moistMinController.text = _fuzzyConfig.moistMin.toString();
-    _moistMaxController.text = _fuzzyConfig.moistMax.toString();
-    _wetMinController.text = _fuzzyConfig.wetMin.toString();
-    _wetMaxController.text = _fuzzyConfig.wetMax.toString();
-    _veryWetMinController.text = _fuzzyConfig.veryWetMin.toString();
-    _veryWetMaxController.text = _fuzzyConfig.veryWetMax.toString();
-
-    _pumpDurationVeryLongController.text =
-        _fuzzyConfig.pumpDurationVeryLong.toString();
-    _pumpDurationLongController.text = _fuzzyConfig.pumpDurationLong.toString();
-    _pumpDurationMediumController.text =
-        _fuzzyConfig.pumpDurationMedium.toString();
-    _pumpDurationShortController.text =
-        _fuzzyConfig.pumpDurationShort.toString();
+    _moistureThresholdController.text =
+        _systemConfig.moistureThreshold.toString();
+    _pumpDurationLongController.text =
+        _systemConfig.pumpDurationLong.toString();
   }
 
   Future<void> _saveChanges() async {
@@ -99,31 +57,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       // Parse values from controllers
-      final updatedConfig = FuzzyConfig(
-        veryDryMin: int.parse(_veryDryMinController.text),
-        veryDryMax: int.parse(_veryDryMaxController.text),
-        dryMin: int.parse(_dryMinController.text),
-        dryMax: int.parse(_dryMaxController.text),
-        moistMin: int.parse(_moistMinController.text),
-        moistMax: int.parse(_moistMaxController.text),
-        wetMin: int.parse(_wetMinController.text),
-        wetMax: int.parse(_wetMaxController.text),
-        veryWetMin: int.parse(_veryWetMinController.text),
-        veryWetMax: int.parse(_veryWetMaxController.text),
-        pumpDurationVeryLong: int.parse(_pumpDurationVeryLongController.text),
+      final updatedConfig = SystemConfig(
+        moistureThreshold: int.parse(_moistureThresholdController.text),
         pumpDurationLong: int.parse(_pumpDurationLongController.text),
-        pumpDurationMedium: int.parse(_pumpDurationMediumController.text),
-        pumpDurationShort: int.parse(_pumpDurationShortController.text),
         pumpDurationNone: 0, // Always 0
       );
 
       // Save to Firebase
       final irrigationSystem =
           Provider.of<IrrigationSystem>(context, listen: false);
-      await irrigationSystem.updateFuzzyConfig(updatedConfig);
+      await irrigationSystem.updateSystemConfig(updatedConfig);
 
       setState(() {
-        _fuzzyConfig = updatedConfig;
+        _systemConfig = updatedConfig;
         _isEditing = false;
       });
 
@@ -160,10 +106,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _resetToDefault() {
-    final defaultConfig = FuzzyConfig.defaultConfig();
+    final defaultConfig = SystemConfig.defaultConfig();
 
     setState(() {
-      _fuzzyConfig = defaultConfig;
+      _systemConfig = defaultConfig;
       _updateTextControllers();
     });
   }
@@ -224,9 +170,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Fuzzy Membership Ranges
+                  // Sistem Konfigurasi
                   Text(
-                    'Rentang Kelembapan Fuzzy',
+                    'Konfigurasi Sistem',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -235,14 +181,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Atur rentang nilai kelembapan untuk setiap kategori fuzzy',
+                    'Atur parameter untuk sistem irigasi otomatis',
                     style: TextStyle(
                       color: theme.colorScheme.onBackground.withOpacity(0.7),
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // Membership Ranges Card
+                  // Konfigurasi Card
                   Card(
                     elevation: 0,
                     color: theme.colorScheme.surface,
@@ -257,50 +203,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         children: [
-                          _buildRangeInput(
-                            context,
-                            title: 'Sangat Kering',
-                            minController: _veryDryMinController,
-                            maxController: _veryDryMaxController,
-                            color: const Color(0xFFE57373),
-                            enabled: _isEditing,
-                          ),
-                          const Divider(),
-                          _buildRangeInput(
-                            context,
-                            title: 'Kering',
-                            minController: _dryMinController,
-                            maxController: _dryMaxController,
-                            color: const Color(0xFFFFB74D),
-                            enabled: _isEditing,
-                          ),
-                          const Divider(),
-                          _buildRangeInput(
-                            context,
-                            title: 'Lembap',
-                            minController: _moistMinController,
-                            maxController: _moistMaxController,
-                            color: const Color(0xFF81C784),
-                            enabled: _isEditing,
-                          ),
-                          const Divider(),
-                          _buildRangeInput(
-                            context,
-                            title: 'Basah',
-                            minController: _wetMinController,
-                            maxController: _wetMaxController,
-                            color: const Color(0xFF4FC3F7),
-                            enabled: _isEditing,
-                          ),
-                          const Divider(),
-                          _buildRangeInput(
-                            context,
-                            title: 'Sangat Basah',
-                            minController: _veryWetMinController,
-                            maxController: _veryWetMaxController,
-                            color: const Color(0xFF5C6BC0),
-                            enabled: _isEditing,
-                          ),
+                          // Threshold Setting
+                          _buildThresholdSetting(context),
+
+                          const Divider(height: 32),
+
+                          // Pump Duration Setting
+                          _buildPumpDurationSetting(context),
                         ],
                       ),
                     ),
@@ -308,141 +217,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Pump Duration Settings
-                  Text(
-                    'Durasi Pompa',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onBackground,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Atur durasi pompa untuk setiap kategori kelembapan (dalam detik)',
-                    style: TextStyle(
-                      color: theme.colorScheme.onBackground.withOpacity(0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Pump Duration Card
+                  // Penjelasan Sistem
                   Card(
                     elevation: 0,
-                    color: theme.colorScheme.surface,
+                    color: theme.colorScheme.primaryContainer,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: theme.colorScheme.outline.withOpacity(0.5),
-                        width: 1,
-                      ),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         children: [
-                          _buildDurationInput(
-                            context,
-                            title: 'Sangat Kering',
-                            controller: _pumpDurationVeryLongController,
-                            color: const Color(0xFFE57373),
-                            enabled: _isEditing,
-                          ),
-                          const Divider(),
-                          _buildDurationInput(
-                            context,
-                            title: 'Kering',
-                            controller: _pumpDurationLongController,
-                            color: const Color(0xFFFFB74D),
-                            enabled: _isEditing,
-                          ),
-                          const Divider(),
-                          _buildDurationInput(
-                            context,
-                            title: 'Lembap',
-                            controller: _pumpDurationMediumController,
-                            color: const Color(0xFF81C784),
-                            enabled: _isEditing,
-                          ),
-                          const Divider(),
-                          _buildDurationInput(
-                            context,
-                            title: 'Basah',
-                            controller: _pumpDurationShortController,
-                            color: const Color(0xFF4FC3F7),
-                            enabled: _isEditing,
-                          ),
-                          const Divider(),
-                          ListTile(
-                            leading: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF5C6BC0).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.info,
+                                color: theme.colorScheme.primary,
                               ),
-                              child: const Icon(
-                                Icons.water,
-                                color: Color(0xFF5C6BC0),
-                                size: 16,
-                              ),
-                            ),
-                            title: const Text('Sangat Basah'),
-                            trailing: const Text(
-                              '0 detik',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: const Text('Pompa selalu mati'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Info
-                  if (!_isEditing) ...[
-                    Card(
-                      elevation: 0,
-                      color: theme.colorScheme.primaryContainer,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.info,
+                              const SizedBox(width: 8),
+                              Text(
+                                'Informasi Sistem',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
                                   color: theme.colorScheme.primary,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Informasi',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Tekan tombol Edit di pojok kanan atas untuk mengubah konfigurasi sistem fuzzy.',
-                              style: TextStyle(
-                                color: theme.colorScheme.onPrimaryContainer,
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          _buildInfoItem(
+                            context,
+                            title: 'Status DRY',
+                            description:
+                                'Jika kelembapan tanah di bawah nilai threshold, tanah dianggap kering (DRY) dan pompa akan menyala.',
+                            icon: Icons.water_drop_outlined,
+                            color: const Color(0xFFE57373),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildInfoItem(
+                            context,
+                            title: 'Status WET',
+                            description:
+                                'Jika kelembapan tanah di atas atau sama dengan nilai threshold, tanah dianggap basah (WET) dan pompa akan mati.',
+                            icon: Icons.water_drop,
+                            color: const Color(0xFF81C784),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildInfoItem(
+                            context,
+                            title: 'Durasi Pompa',
+                            description:
+                                'Durasi pompa menyala (dalam detik) saat tanah dalam kondisi kering (DRY).',
+                            icon: Icons.timer,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
 
                   // Save Button
                   if (_isEditing) ...[
@@ -489,14 +321,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildRangeInput(
-    BuildContext context, {
-    required String title,
-    required TextEditingController minController,
-    required TextEditingController maxController,
-    required Color color,
-    required bool enabled,
-  }) {
+  Widget _buildThresholdSetting(BuildContext context) {
     final theme = Theme.of(context);
 
     return Column(
@@ -505,146 +330,402 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Row(
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: theme.colorScheme.primary.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                Icons.water_drop,
-                color: color,
-                size: 16,
+                Icons.tune,
+                color: theme.colorScheme.primary,
+                size: 24,
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Threshold Kelembapan',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  Text(
+                    'Batas antara status DRY dan WET (0-1000)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: minController,
-                enabled: enabled,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Min',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  isDense: true,
-                ),
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface,
-                ),
+        const SizedBox(height: 16),
+        if (_isEditing) ...[
+          TextField(
+            controller: _moistureThresholdController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Threshold (0-1000)',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
+              hintText: '500',
+              helperText: '< Threshold: DRY, ≥ Threshold: WET',
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextField(
-                controller: maxController,
-                enabled: enabled,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Max',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+          ),
+        ] else ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Nilai Saat Ini:',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
+                  const SizedBox(height: 4),
+                  Text(
+                    _systemConfig.moistureThreshold.toString(),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
-                  isDense: true,
-                ),
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface,
-                ),
+                ],
               ),
-            ),
-          ],
-        ),
+              _buildThresholdVisual(context),
+            ],
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildDurationInput(
+  Widget _buildThresholdVisual(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: 150,
+      height: 40,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.5),
+          width: 1,
+        ),
+      ),
+      child: Stack(
+        children: [
+          // DRY section
+          Container(
+            width: 150 * (_systemConfig.moistureThreshold / 1000),
+            decoration: const BoxDecoration(
+              color: Color(0xFFE57373),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(7),
+                bottomLeft: Radius.circular(7),
+              ),
+            ),
+            child: const Center(
+              child: Text(
+                'DRY',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+
+          // WET section
+          Positioned(
+            right: 0,
+            child: Container(
+              width: 150 * (1 - _systemConfig.moistureThreshold / 1000),
+              height: 38,
+              decoration: const BoxDecoration(
+                color: Color(0xFF81C784),
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(7),
+                  bottomRight: Radius.circular(7),
+                ),
+              ),
+              child: const Center(
+                child: Text(
+                  'WET',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPumpDurationSetting(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.timer,
+                color: theme.colorScheme.secondary,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Durasi Pompa (DRY)',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  Text(
+                    'Durasi pompa menyala saat tanah kering (detik)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_isEditing) ...[
+          TextField(
+            controller: _pumpDurationLongController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Durasi (detik)',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              hintText: '20',
+              helperText: 'Waktu pompa aktif saat status DRY',
+              suffixText: 'detik',
+            ),
+          ),
+        ] else ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Nilai Saat Ini:',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        _systemConfig.pumpDurationLong.toString(),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.secondary,
+                        ),
+                      ),
+                      Text(
+                        ' detik',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE57373).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFFE57373).withOpacity(0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.water_drop_outlined,
+                      color: Color(0xFFE57373),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Saat DRY',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Durasi saat WET:',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        '0',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                      ),
+                      Text(
+                        ' detik',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF81C784).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFF81C784).withOpacity(0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.water_drop,
+                      color: Color(0xFF81C784),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Saat WET',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildInfoItem(
     BuildContext context, {
     required String title,
-    required TextEditingController controller,
+    required String description,
+    required IconData icon,
     required Color color,
-    required bool enabled,
   }) {
     final theme = Theme.of(context);
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 32,
-          height: 32,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             color: color.withOpacity(0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
-            Icons.water_drop,
+            icon,
             color: color,
-            size: 16,
+            size: 20,
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onPrimaryContainer,
                 ),
               ),
+              const SizedBox(height: 4),
               Text(
-                'Durasi pompa saat kelembapan $title',
+                description,
                 style: TextStyle(
                   fontSize: 12,
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  color: theme.colorScheme.onPrimaryContainer.withOpacity(0.8),
                 ),
               ),
             ],
-          ),
-        ),
-        SizedBox(
-          width: 80,
-          child: TextField(
-            controller: controller,
-            enabled: enabled,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            decoration: InputDecoration(
-              suffix: const Text('s'),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
-              ),
-              isDense: true,
-            ),
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
-            ),
           ),
         ),
       ],

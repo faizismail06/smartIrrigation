@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:smart_irrigation/models/fuzzy_config.dart';
+import 'package:smart_irrigation/models/system_config.dart';
 import 'package:smart_irrigation/models/sensor_data.dart';
 
 class FirebaseService {
@@ -19,22 +19,27 @@ class FirebaseService {
     });
   }
 
-  // Mendapatkan konfigurasi fuzzy
-  Future<FuzzyConfig> getFuzzyConfig() async {
+  // Mendapatkan konfigurasi sistem
+  Future<SystemConfig> getSystemConfig() async {
     final snapshot =
-        await _database.child('irrigation-system/fuzzy_config').get();
+        await _database.child('irrigation-system/system_config').get();
     if (snapshot.exists) {
       final data = snapshot.value as Map<dynamic, dynamic>;
-      return FuzzyConfig.fromMap(Map<String, dynamic>.from(data));
+      return SystemConfig.fromMap(Map<String, dynamic>.from(data));
     } else {
-      return FuzzyConfig.defaultConfig();
+      // Jika konfigurasi belum ada di Firebase, buat dengan default
+      final defaultConfig = SystemConfig.defaultConfig();
+      await _database
+          .child('irrigation-system/system_config')
+          .set(defaultConfig.toMap());
+      return defaultConfig;
     }
   }
 
-  // Update konfigurasi fuzzy
-  Future<void> updateFuzzyConfig(FuzzyConfig config) async {
+  // Update konfigurasi sistem
+  Future<void> updateSystemConfig(SystemConfig config) async {
     await _database
-        .child('irrigation-system/fuzzy_config')
+        .child('irrigation-system/system_config')
         .update(config.toMap());
   }
 
@@ -91,6 +96,8 @@ class FirebaseService {
     if (snapshot.exists) {
       return snapshot.value as bool;
     } else {
+      // Jika belum ada, buat dengan default
+      await _database.child('irrigation-system/system_status').set(true);
       return true; // Default status adalah aktif
     }
   }
